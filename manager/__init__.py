@@ -31,6 +31,8 @@ def token2agent(token):
         raise base_class.TokenNotFound
 
 def dispatch(ret):
+    if not ret.has_key('actions'):
+        return
     for action in ret['actions']:
         if action['type'] == 'start_agent':
             new = info.add_agent(action['data'])
@@ -50,14 +52,35 @@ def dispatch(ret):
     pass
 
 def run():
-    ret = login()
-    last_update = time.time()
-    dispatch(ret)
+    print 'try to login'
+    while True:
+        try:
+            ret = login()
+            print 'login succeed'
+            last_update = time.time()
+            print ret
+            dispatch(ret)
+            break
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception as e:
+            time.sleep(1)
+            print e
 
     while True:
         now = time.time()
         time_left = config.HEARTBEAT_INTERVAL - (now - last_update)
-        time.sleep(time_left)
-        ret = heartbeat()
-        last_update = time.time()
-        dispatch(ret)
+        if time_left > 0:
+            time.sleep(time_left)
+        print 'try to heartbeat'
+        try:
+            ret = heartbeat()
+            last_update = time.time()
+            print 'heartbeat success'
+            print ret
+            dispatch(ret)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception as e:
+            print e
+            time.sleep(1)
